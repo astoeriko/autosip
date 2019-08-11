@@ -1,0 +1,16 @@
+{
+	"start_freq": "1000.0",
+	"stop_freq": "1.0",
+	"n_steps": "4",
+	"amplitude": "5.0",
+        "settle_time": "1",
+        "settle_cycles": "1",     
+        "integration_time": "5",
+	"integration_cycles": "5",
+        "resistor_ohm": "1000",
+        "loop_count": "1",
+        "master_slave_sel": "0",
+        "ext_trigger_sel": "0",
+        "comment": "",
+        "submit": "1"
+}
