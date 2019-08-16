@@ -11,6 +11,6 @@
         "loop_count": "1",
         "master_slave_sel": "0",
         "ext_trigger_sel": "0",
-        "comment": "",
+        "comment": "short testrun",
         "submit": "1"
 }

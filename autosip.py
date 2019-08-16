@@ -13,8 +13,6 @@ logging.getLogger("urllib3.connectionpool").setLevel(logging.ERROR)
 
 
 DEFAULTS = {
-    'stimulus_channel': '1',
-    'response_channel': '1',
     'start_freq': '1000.0',
     'stop_freq': '0.01',
     'n_steps': '51',
@@ -28,7 +26,7 @@ DEFAULTS = {
     'master_slave_sel': '0',
     'ext_trigger_sel': '0',
     'filename': 'sip_results',
-    'comment': '',
+    'comment': 'comment',
     'submit': '1'
 }
 
@@ -56,10 +54,10 @@ PARAM_NAMES = {
     }
 
 PORTS = {
-    1: 9344,
-    2: 9345,
-    3: 9346,
-    4: 9347,
+    "1": 9344,
+    "2": 9345,
+    "3": 9346,
+    "4": 9347,
 }
 
 
@@ -77,19 +75,23 @@ def wait_until(target_time):
     now = arrow.utcnow()
     diff = (target_time - now).total_seconds()
     logger.info('Waiting until %s for next measurement' % target_time.isoformat())
-    #time.sleep(diff) #TODO
-    time.sleep(300)
+    time.sleep(diff)
 
 
-def prepare_data(basename, channel, **params):
+def prepare_data(basename, stimulus_channel, response_channels, **params):
     vals = params.copy()
-    vals['filename'] = '%s-channel%s-%s' % (
-        arrow.utcnow().strftime("%Y%m%dT%H%M%SZ"),
-        channel,
+    vals['filename'] = '%s-ch%s-%s' % (
+        arrow.utcnow().strftime("%Y%m%dT%H%MZ"),
+        stimulus_channel,
         basename)
-    vals['stimulus_channel'] = channel
-    vals['response_channel'] = channel
-    return {PARAM_NAMES[name]: val for name, val in vals.items()}
+    vals['stimulus_channel'] = stimulus_channel
+#    breakpoint()
+#    if len(response_channels) == 1:
+#        vals['response_channel'] = str(response_channels[0])
+#    else:
+    vals['response_channel'] = ','.join(str(i) for i in response_channels)
+    return {instrument_name: vals[name]
+            for name, instrument_name in PARAM_NAMES.items()}
 
 
 def check_device_ready(ip, channels):
@@ -141,17 +143,20 @@ def measure(data, args):
             logger.error('Skipping this measurement.')
             return
 
-    for channel in args.channels:
-        url = 'http://%s:%s' % (args.ip, PORTS[channel])
-        logger.info('Measuring channel %s' % channel)
+    for stimulus_channel, response_channels in args.channels.items():
+        url = 'http://%s:%s' % (args.ip, PORTS[stimulus_channel])
+        logger.info('Measuring stimulus channel %s at response channels %s.'
+                    % (stimulus_channel, response_channels))
         try:
-            run_data = prepare_data(args.basename, channel, **data)
+            run_data = prepare_data(
+                args.basename, stimulus_channel, response_channels, **data)
             response = requests.post(url, data=run_data)
             check_response(response)
             logger.info('Measurement submitted successfully to file %s'
                         % run_data[PARAM_NAMES['filename']])
         except Exception:
-            logger.exception("Measurement on channel %s failed." % channel)
+            logger.exception("Measurement on channel %s failed."
+                             % stimulus_channel)
 
 
 def parse_args():
@@ -160,8 +165,9 @@ def parse_args():
                         help='Parameter file overwriting the defaults in json '
                         'format. For available variable names, see '
                         'PARAM_NAMES in the source code of this script.')
-    parser.add_argument('--channels', nargs='+', type=int, default=['1'],
-                        help='The channels at which we want to measure.')
+    parser.add_argument('--channels-file', type=str, required=True,
+                        help='JSON file that maps stimulus channel number to '
+                        'a list of measurement channel numbers.')
     parser.add_argument('--basename', required=True, type=str,
                         help='Suffix for each file created on the measurement '
                         'device. It will automatically be prefixed with date, '
@@ -178,8 +184,11 @@ def parse_args():
     if args.paramfile is None:
         data = {}
     else:
-        with open(args.paramfile, 'rb') as file:
+        with open(args.paramfile, 'r') as file:
             data = json.load(file)
+
+    with open(args.channels_file, 'r') as file:
+        args.channels = json.load(file)
 
     if args.logfile is not None:
         logfile = args.logfile
@@ -205,6 +214,7 @@ def main():
     default.update(data)
     data = default
     logger.info('Parameters are: %s' % data)
+    logger.info('Channel mapping is: %s' % args.channels)
 
     measure(data, args)
     while True:
