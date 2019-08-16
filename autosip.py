@@ -85,10 +85,6 @@ def prepare_data(basename, stimulus_channel, response_channels, **params):
         stimulus_channel,
         basename)
     vals['stimulus_channel'] = stimulus_channel
-#    breakpoint()
-#    if len(response_channels) == 1:
-#        vals['response_channel'] = str(response_channels[0])
-#    else:
     vals['response_channel'] = ','.join(str(i) for i in response_channels)
     return {instrument_name: vals[name]
             for name, instrument_name in PARAM_NAMES.items()}
