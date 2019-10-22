@@ -160,7 +160,8 @@ def parse_args():
     parser.add_argument('--paramfile', required=False,
                         help='Parameter file overwriting the defaults in json '
                         'format. For available variable names, see '
-                        'PARAM_NAMES in the source code of this script.')
+                        'PARAM_NAMES in the source code of this script.'
+                        'For default values, see DEFAULTS in the source code.')
     parser.add_argument('--channels-file', type=str, required=True,
                         help='JSON file that maps stimulus channel number to '
                         'a list of measurement channel numbers.')
@@ -174,7 +175,8 @@ def parse_args():
                         'always at the full hour.')
     parser.add_argument('--ip', required=True, type=str, help='IP address of '
                         'measurement device. Check with ipconfig on device.')
-    parser.add_argument('--logfile', type=str)
+    parser.add_argument('--logfile', type=str, help='File to write log to. If it is not specified,'
+                        'logs will be written to an automatically generated file.')
     args = parser.parse_args()
 
     if args.paramfile is None:
