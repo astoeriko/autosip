@@ -1,8 +1,11 @@
+import math
+import re
 import requests
 import getpass
 import arrow
 import logging
 import time
+import datetime
 import argparse
 import json
 
@@ -107,10 +110,23 @@ def get_param_names(version):
         raise ValueError(f"SIP software version {version} is not supported.")
 
 
-def next_measure_time(every_hours=2):
+def get_interval(interval_str):
+    time_pattern = "([0-2]?[0-9]):([0-5][0-9])"
+    match = re.match(time_pattern, interval_str)
+    if match is None:
+        raise ValueError("Invalid format for time interval.")
+    else:
+        hour, minutes = (int(g) for g in match.groups())
+    return datetime.timedelta(hours=hour, minutes=minutes)
+
+
+def first_measure_time(interval):
     now = arrow.utcnow()
-    hour = now.floor('hour')
-    return hour.shift(hours=every_hours)
+    next_full_hour = now.ceil('hour')
+    diff_to_full_hour = next_full_hour - now
+    num_intervals = diff_to_full_hour / interval
+    time_to_next_measurement = (num_intervals - math.floor(num_intervals)) * interval
+    return now + time_to_next_measurement
 
 
 def wait_until(target_time):
@@ -211,17 +227,24 @@ def parse_args():
                         help='Suffix for each file created on the measurement '
                         'device. It will automatically be prefixed with date, '
                         'time and channel.')
-    parser.add_argument('--interval-hours', required=True, type=int,
-                        help='Run measurements once every `interval-hours`. The '
-                        'first measurement will be run right away, after that '
-                        'always at the full hour.')
+    parser.add_argument('--interval', required=True, type=str,
+                        help='Interval of the measurements given in HH:MM.')
     parser.add_argument('--ip', required=True, type=str, help='IP address of '
                         'measurement device. Check with ipconfig on device.')
     parser.add_argument('--logfile', type=str, help='File to write log to. If it is not specified,'
                         'logs will be written to an automatically generated file.')
-    parser.add_argument('--sip-version', required=False, type=str, help='Version number '
-                        'of the SIP software. Currently, only version 1.0.1 and 1.3.1h-1'
-                        ' are supported.')
+    parser.add_argument('--sip-version', required=False, type=str,
+                        choices=['1.0.1', '1.3.1h-1'], default='1.3.1h-1',
+                        help='Version number of the SIP software. '
+                        'Currently, only version 1.0.1 and 1.3.1h-1 are supported.')
+    parser.add_argument('--measure-full-hours', required=False, action='store_true',
+                        help='Option to schedule time measurements in a way'
+                        ' that they will match the full hour. '
+                        'This means that they do not start right away, '
+                        'but n * interval before the next full hour. '
+                        '(where n is the maximum number of times that interval '
+                        'fits into the time until the full hour.) '
+                        'Otherwise, measurements start right away.')
     args = parser.parse_args()
 
     if args.paramfile is None:
@@ -239,9 +262,6 @@ def parse_args():
         now = arrow.utcnow().strftime("%Y%m%dT%H%M%SZ")
         logfile = '%s-%s-autorun.log' % (now, args.basename)
     args.logfile = logfile
-
-    if args.sip_version is None:
-        args.sip_version = "1.3.1h-1"
 
     return args, data
 
@@ -273,9 +293,17 @@ def main():
     else:
         request_kwargs = {}
 
+    # Start meaurement in given intervals
+    interval = get_interval(args.interval)
+    if args.measure_full_hours:
+        print(args.measure_full_hours)
+        next_time = first_measure_time(interval)
+        wait_until(next_time)
+    else:
+        next_time = arrow.utcnow()
     measure(data, param_names, args, request_kwargs)
     while True:
-        next_time = next_measure_time(args.interval_hours)
+        next_time = next_time + interval
         wait_until(next_time)
         measure(data, param_names, args, request_kwargs)
 
