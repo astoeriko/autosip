@@ -1,6 +1,7 @@
 # autosip
 
-This script automates the start of spectral induced polarization (SIP) measurements with the instrument of the Ecohydrology lab at the University of Waterloo.
+This script automates the start of spectral induced polarization (SIP) measurements with the Ontash & Ermac PSIP TOOL software.
+It has been tested with the instrument of the Ecohydrology lab at the University of Waterloo and of the Hydrogeology group at the University of Tübingen.
 It interacts with the SIP software by creating HTTP post requests that contain the information that is otherwise entered manually into the form of the web interface.
 
 ## Requirements and Installation
@@ -54,7 +55,9 @@ Examples can be found in this repository.
 ### Running the script
 The command for running the script could look like this:
 ```
-python autosip.py --paramfile parameters.json --channels-file channel_mapping.json --basename experiment_xy --interval-hours 1 --ip XXX.XXX.XXX.XXX
+python autosip.py --paramfile parameters.json --channels-file channel_mapping.json --basename experiment_xy --interval "1:00" --ip XXX.XXX.XXX.XXX --measure-full-hours --measure-full-hours
 ```
 This assumes that the script is run from the directory where it is stored and that parameter files are stored in the same location.
-If you want to run the script from a different folder or the parameter files are stored elsewhere, specify full paths to the script or parameter files.
+If you want to run the script from a different folder or the parameter files are stored elsewhere, specify full paths to the script or parameter files
+
+When specifying version 1.3.1h-1 for the PSIP software, you will be prompted for authentication data to acces the SIP server.
