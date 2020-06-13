@@ -55,7 +55,7 @@ Examples can be found in this repository.
 ### Running the script
 The command for running the script could look like this:
 ```
-python autosip.py --paramfile parameters.json --channels-file channel_mapping.json --basename experiment_xy --interval "1:00" --ip XXX.XXX.XXX.XXX --measure-full-hours --measure-full-hours
+python autosip.py --paramfile parameters.json --channels-file channel_mapping.json --basename experiment_xy --interval "1:00" --ip XXX.XXX.XXX.XXX --measure-full-hours
 ```
 This assumes that the script is run from the directory where it is stored and that parameter files are stored in the same location.
 If you want to run the script from a different folder or the parameter files are stored elsewhere, specify full paths to the script or parameter files
